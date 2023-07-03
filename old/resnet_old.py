@@ -2,10 +2,9 @@ import torch
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import os
-import model
+from old import model
 import util
 #from sketchedsgd import SketchedSGD, SketchedSum, SketchedModel
-import numpy as np
 #from error_SGD import ErrorFeedbackSGD
 
 class ResNet18:

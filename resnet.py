@@ -170,14 +170,6 @@ class SketchBasicBlock(nn.Module):
         self.h2.requires_grad = False
         self.h2t.requires_grad = False
 
-    '''
-    def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        out += self.shortcut(x)
-        return F.relu(out)
-    '''
-
     def forward(self, x):
 
         # forward first piece
