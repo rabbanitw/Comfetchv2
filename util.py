@@ -1,6 +1,55 @@
 import sys
 import numpy as np
 from PIL import Image
+import os
+import shutil
+
+
+class Recorder(object):
+    def __init__(self, folderName, size, rank, args):
+        self.record_epoch_times = list()
+        self.record_comp_times = list()
+        self.record_comm_times = list()
+        self.record_loss = list()
+        self.record_training_acc = list()
+        self.record_test_acc = list()
+        self.rank = rank
+        self.saveFolderName = folderName + '/' + args.name + '-' + str(size) + 'workers-' + str(args.cr) + 'cr'
+
+        if rank == 0:
+            if not os.path.isdir(self.saveFolderName):
+                os.mkdir(self.saveFolderName)
+                with open(self.saveFolderName + '/ExpDescription', 'w') as f:
+                    f.write(str(args) + '\n')
+            else:
+                shutil.rmtree(self.saveFolderName)
+                os.mkdir(self.saveFolderName)
+                with open(self.saveFolderName + '/ExpDescription', 'w') as f:
+                    f.write(str(args) + '\n')
+
+    def add_batch_stats(self, comp_time, train_acc, loss):
+        self.record_comp_times.append(comp_time)
+        self.record_training_acc.append(train_acc)
+        self.record_loss.append(loss)
+
+    def add_epoch_stats(self, test_acc, epoch_time, comm_time):
+        self.record_test_acc.append(test_acc)
+        self.record_comm_times.append(comm_time)
+        self.record_epoch_times.append(epoch_time)
+        np.savetxt(self.saveFolderName + '/r' + str(self.rank) + '-test-acc.log', self.record_test_acc,
+                   delimiter=',')
+        np.savetxt(self.saveFolderName + '/r' + str(self.rank) + '-comm-time.log', self.record_comm_times,
+                   delimiter=',')
+        np.savetxt(self.saveFolderName + '/r' + str(self.rank) + '-epoch-time.log', self.record_epoch_times,
+                   delimiter=',')
+
+    def save_to_file(self):
+        np.savetxt(self.saveFolderName + '/r' + str(self.rank) + '-comp-time.log', self.record_comp_times,
+                   delimiter=',')
+        np.savetxt(self.saveFolderName + '/r' + str(self.rank) + '-train-loss.log', self.record_loss,
+                   delimiter=',')
+        np.savetxt(self.saveFolderName + '/r' + str(self.rank) + '-train-acc.log', self.record_training_acc,
+                   delimiter=',')
 
 
 class ProgressBar:
