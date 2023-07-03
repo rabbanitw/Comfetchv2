@@ -1,0 +1,1 @@
+Namespace(norm='bn', partition='noniid', client_number=100, alpha_partition=0.001, commrounds=200, clientfr=1.0, epochs=5, train_bs=128, test_bs=1024, clientlr=0.001, sch_flag=False, mixup_prop=0.0, natural_img_prop=0.0, real_prop=0.0, mix_num=3, laplace_scale=50.0, supplement=True, sketch=1, cr=0.5, name='test')
