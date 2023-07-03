@@ -367,12 +367,12 @@ def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, cifar_data_t
         if best_accuracy < t_accuracy:
             best_accuracy = t_accuracy
         # torch.save(model.state_dict(), plt_title)
-        with open(filename, 'a') as f:
+        #with open(filename, 'a') as f:
             # create the csv writer
-            writer = csv.writer(f)
+            #writer = csv.writer(f)
 
             # write a row to the csv file
-            writer.writerow([curr_round, loss_avg, t_loss, t_accuracy, best_accuracy])
+            #writer.writerow([curr_round, loss_avg, t_loss, t_accuracy, best_accuracy])
         print(f"Current Round: {curr_round}, Average Loss: {loss_avg}, Test Loss: {t_loss}, Test Accuracy: {t_accuracy}, Best: {best_accuracy}")
         print('best_accuracy:', best_accuracy, '---Round:', curr_round, '---lr', lr, '----localEpocs--', E)
 
