@@ -8,7 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import copy
 import model
-from resnet import ResNet18
+from resnet_old import ResNet18
 import random
 import time
 import torchvision

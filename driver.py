@@ -2,6 +2,8 @@ import torch
 from torchvision import transforms, datasets, models
 from argparse import ArgumentParser
 from mpi4py import MPI
+from resnet import ResNet
+import time
 
 
 def load_cifar(train_bs, test_bs):
@@ -35,6 +37,8 @@ def train(model, optimizer, loss_fn, train_dl, device, epochs, freq):
         running_loss = 0.0
         batch_idx = 1
         for inputs, labels in train_dl:
+
+            t = time.time()
             inputs = inputs.to(device)
             labels = labels.to(device)
             batch_size = inputs.size(dim=0)
@@ -61,9 +65,11 @@ def train(model, optimizer, loss_fn, train_dl, device, epochs, freq):
 
             # print statistics
             running_loss += loss.item()
+            batch_time = time.time() - t
             if batch_idx % freq == 0:
                 running_loss = running_loss / freq
-                print('batch %d: accuracy %f, average loss: %f' % (batch_idx, accuracy, running_loss))
+                print('batch %d: accuracy %f, average loss: %f, time: %f' % (batch_idx, accuracy, running_loss,
+                                                                             batch_time))
                 running_loss = 0.0
 
             batch_idx += 1
@@ -90,7 +96,8 @@ if __name__ == '__main__':
     parser.add_argument('--mix_num', type=int, default=3)
     parser.add_argument('--laplace_scale', type=float, default=50.)
     parser.add_argument('--supplement', type=bool, default=True)
-    parser.add_argument('--comp_rate', type=int, default=1)
+    parser.add_argument('--sketch', type=int, default=1)
+    parser.add_argument('--cr', type=float, default=0.5)
 
     args = parser.parse_args()
 
@@ -113,13 +120,17 @@ if __name__ == '__main__':
     test_bs = args.test_bs
     learning_rate = args.clientlr
     epochs = args.clientepochs
+    cr = args.cr
     batch_freq = 5
+    resnet_size = 18
+    sketch = bool(args.sketch)
 
     # load data
     train_dl, test_dl, num_classes = load_cifar(train_bs, test_bs)
 
     # initialize model
-    model = models.resnet18()
+    # model = models.resnet18()
+    model = ResNet(resnet_size, num_classes, cr=cr, sketch=sketch)
 
     # initialize optimizer and loss
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
