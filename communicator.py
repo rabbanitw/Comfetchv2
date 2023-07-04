@@ -82,6 +82,7 @@ class Communicator:
 
         # reset local models to be the averaged model
         self.reset_model()
+        model.to(self.device)
 
     def prepare(self, model):
 
@@ -113,5 +114,6 @@ class Communicator:
 
         # reset local models to be the averaged model
         self.reset_model()
+        model.to(self.device)
 
         return comm_time
