@@ -15,4 +15,5 @@ module load mpi
 module load cuda/11.4.4
 source ../../../../cmlscratch/marcob/environments/compressed/bin/activate
 
-mpirun -n 4 python main.py
+#Example of running a 
+mpirun -n 4 python main.py --cr 0.25
