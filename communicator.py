@@ -97,7 +97,7 @@ class Communicator:
     def reset_model(self, model):
         uft = unflatten_tensors(self.recv_buffer, self.tensor_list)
         for i, param in enumerate(model.parameters()):
-            param.data = uft[i]
+            param.data = uft[i].to(self.device)
         '''
         for f, t in zip(uft, self.tensor_list):
             t = t.to(self.device)
