@@ -95,11 +95,11 @@ class Communicator:
         self.recv_buffer = np.zeros_like(self.send_buffer)
 
     def reset_model(self):
-
         uft = unflatten_tensors(self.recv_buffer, self.tensor_list)
         for f, t in zip(uft, self.tensor_list):
+            t = t.to(self.device)
             with torch.no_grad():
-                t.set_(f).to(self.device)
+                t.set_(f)
 
     def communicate(self, model):
 
