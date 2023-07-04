@@ -57,7 +57,6 @@ class Communicator:
         self.tensor_list = list()
         self.send_buffer = None
         self.recv_buffer = None
-        print(device)
 
     def average(self, state_dict):
 

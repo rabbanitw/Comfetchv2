@@ -51,6 +51,7 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
     if rank == 0:
         print('Beginning Training')
 
+    print(device)
     for epoch in range(1, epochs+1):
 
         if rank == 0:

@@ -172,6 +172,8 @@ class SketchBasicBlock(nn.Module):
 
     def forward(self, x):
 
+        print(self.w1.get_device())
+        print(self.h1.get_device())
         # forward first piece
         out_sketch1 = sketch_mat(self.w1, self.h1)
         out_conv1 = F.conv2d(x, out_sketch1, padding=1, stride=self.stride, bias=self.b1)
