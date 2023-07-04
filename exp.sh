@@ -12,7 +12,7 @@
 
 module purge
 module load mpi
-module load cuda/11.1.1
+#module load cuda/11.1.1
 #source ../../../../cmlscratch/marcob/environments/compressed/bin/activate
 
 #Example of running a 25% (weight reduced by 75%) sketch with 200 comm rounds
