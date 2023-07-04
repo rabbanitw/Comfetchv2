@@ -96,7 +96,7 @@ class Communicator:
 
     def reset_model(self):
 
-        for f, t in zip(unflatten_tensors(self.recv_buffer.to(self.device), self.tensor_list), self.tensor_list):
+        for f, t in zip(unflatten_tensors(self.recv_buffer, self.tensor_list), self.tensor_list):
             with torch.no_grad():
                 t.set_(f)
 
