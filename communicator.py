@@ -98,6 +98,7 @@ class Communicator:
         uft = unflatten_tensors(self.recv_buffer, self.tensor_list)
         for f, t in zip(uft, self.tensor_list):
             t = t.to(self.device)
+            f = f.to(self.device)
             with torch.no_grad():
                 t.set_(f)
 
