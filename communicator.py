@@ -82,7 +82,6 @@ class Communicator:
 
         # reset local models to be the averaged model
         self.reset_model()
-        model.to(self.device)
 
     def prepare(self, model):
 
@@ -97,9 +96,10 @@ class Communicator:
 
     def reset_model(self):
 
-        for f, t in zip(unflatten_tensors(self.recv_buffer, self.tensor_list), self.tensor_list):
+        uft = unflatten_tensors(self.recv_buffer, self.tensor_list)
+        for f, t in zip(uft, self.tensor_list):
             with torch.no_grad():
-                t.set_(f)
+                t.set_(f).to(self.device)
 
     def communicate(self, model):
 
@@ -114,6 +114,5 @@ class Communicator:
 
         # reset local models to be the averaged model
         self.reset_model()
-        model.to(self.device)
 
         return comm_time
