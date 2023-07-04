@@ -57,6 +57,7 @@ class Communicator:
         self.tensor_list = list()
         self.send_buffer = None
         self.recv_buffer = None
+        print(device)
 
     def average(self, state_dict):
 
@@ -90,6 +91,7 @@ class Communicator:
 
         # reset local models to be the averaged model
         model.load_state_dict(state_dict)
+        model.to(self.device)
 
     def prepare(self, model):
         return model.state_dict()
@@ -104,5 +106,6 @@ class Communicator:
 
         # reset local models to be the averaged model
         model.load_state_dict(state_dict)
+        model.to(self.device)
 
         return comm_time
