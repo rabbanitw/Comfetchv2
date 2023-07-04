@@ -179,13 +179,13 @@ class SketchBasicBlock(nn.Module):
 
         # forward first piece
         out_sketch1 = sketch_mat(self.w1, self.h1)
-        out_conv1 = F.conv2d(x, out_sketch1, padding=1, stride=self.stride, bias=self.b1)
+        out_conv1 = F.conv2d(x, out_sketch1, padding=1, stride=self.stride) #, bias=self.b1)
         out_unsketch1 = unsketch_mat(out_conv1, self.h1.transpose(1, 2))
         out1 = F.relu(self.bn1(out_unsketch1))
 
         # forward second piece
         out_sketch2 = sketch_mat(self.w2, self.h2)
-        out_conv2 = F.conv2d(out1, out_sketch2, padding=1, stride=1, bias=self.b2)
+        out_conv2 = F.conv2d(out1, out_sketch2, padding=1, stride=1) #, bias=self.b2)
         out_unsketch2 = unsketch_mat(out_conv2, self.h2.transpose(1, 2))
         out = self.bn2(out_unsketch2)
 
