@@ -12,8 +12,8 @@
 
 module purge
 module load mpi
-module load cuda/11.4.4
-source ../../../../cmlscratch/marcob/environments/compressed/bin/activate
+module load cuda/11.1.1
+#source ../../../../cmlscratch/marcob/environments/compressed/bin/activate
 
 #Example of running a 25% (weight reduced by 75%) sketch with 200 comm rounds
 mpirun -n 4 python main.py --cr 0.25 --epochs 200
