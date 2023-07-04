@@ -81,7 +81,7 @@ class Communicator:
         self.recv_buffer = torch.from_numpy(self.recv_buffer / self.size)
 
         # reset local models to be the averaged model
-        self.reset_model()
+        self.reset_model(model)
 
     def prepare(self, model):
 
@@ -94,13 +94,17 @@ class Communicator:
         self.send_buffer = flatten_tensors(self.tensor_list).cpu().detach().numpy()
         self.recv_buffer = np.zeros_like(self.send_buffer)
 
-    def reset_model(self):
+    def reset_model(self, model):
         uft = unflatten_tensors(self.recv_buffer, self.tensor_list)
+        for i, param in enumerate(model.parameters()):
+            param.data = uft[i]
+        '''
         for f, t in zip(uft, self.tensor_list):
             t = t.to(self.device)
             f = f.to(self.device)
             with torch.no_grad():
                 t.set_(f)
+        '''
 
     def communicate(self, model):
 
