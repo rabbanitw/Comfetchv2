@@ -90,28 +90,28 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, depth, num_classes, sketch=True, cr=0.5):
+    def __init__(self, depth, num_classes, sketch=True, cr=0.5, device=None):
         super(ResNet, self).__init__()
-        self.in_planes = 16
+        self.in_planes = 64
         self.cr = cr
         self.sketch = sketch
 
         block, num_blocks = cfg(depth, sketch=self.sketch)
 
-        self.conv1 = conv3x3(3, 16)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
-        self.linear = nn.Linear(64*block.expansion, num_classes)
+        self.conv1 = conv3x3(3, self.in_planes)
+        self.bn1 = nn.BatchNorm2d(self.in_planes)
+        self.layer1 = self._make_layer(block, 64, num_blocks[0], device, stride=1)
+        self.layer2 = self._make_layer(block, 128, num_blocks[1], device, stride=2)
+        self.layer3 = self._make_layer(block, 256, num_blocks[2], device, stride=2)
+        self.linear = nn.Linear(256*block.expansion, num_classes)
 
-    def _make_layer(self, block, planes, num_blocks, stride):
+    def _make_layer(self, block, planes, num_blocks, device, stride):
         strides = [stride] + [1]*(num_blocks-1)
         layers = []
 
         for stride in strides:
             if self.sketch:
-                layer = block(self.in_planes, planes, self.cr, stride)
+                layer = block(self.in_planes, planes, self.cr, device, stride)
             else:
                 layer = block(self.in_planes, planes, stride)
             layers.append(layer)
@@ -134,9 +134,10 @@ class ResNet(nn.Module):
 class SketchBasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, in_planes, planes, cr, stride=1, num_sketches=1):
+    def __init__(self, in_planes, planes, cr, device, stride=1, num_sketches=1):
         super(SketchBasicBlock, self).__init__()
         self.stride = stride
+        self.device = device
         sketch_dim = int(planes*cr)
 
         # first piece
@@ -172,16 +173,20 @@ class SketchBasicBlock(nn.Module):
 
     def forward(self, x):
 
+        # load onto device
+        self.h1 = self.h1.to(self.device)
+        self.h2 = self.h2.to(self.device)
+
         # forward first piece
         out_sketch1 = sketch_mat(self.w1, self.h1)
-        out_conv1 = F.conv2d(x, out_sketch1, padding=1, stride=self.stride, bias=self.b1)
-        out_unsketch1 = unsketch_mat(out_conv1, self.h1t)
+        out_conv1 = F.conv2d(x, out_sketch1, padding=1, stride=self.stride) #, bias=self.b1)
+        out_unsketch1 = unsketch_mat(out_conv1, self.h1.transpose(1, 2))
         out1 = F.relu(self.bn1(out_unsketch1))
 
         # forward second piece
         out_sketch2 = sketch_mat(self.w2, self.h2)
-        out_conv2 = F.conv2d(out1, out_sketch2, padding=1, stride=1, bias=self.b2)
-        out_unsketch2 = unsketch_mat(out_conv2, self.h2t)
+        out_conv2 = F.conv2d(out1, out_sketch2, padding=1, stride=1) #, bias=self.b2)
+        out_unsketch2 = unsketch_mat(out_conv2, self.h2.transpose(1, 2))
         out = self.bn2(out_unsketch2)
 
         # shortcut piece that I don't understand

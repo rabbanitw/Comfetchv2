@@ -87,7 +87,7 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
                 # total_pred[classes[label]] += 1
             accuracy = total_correct / batch_size
             loss_val = loss.item()
-            recorder.add_batch_stats(batch_time, accuracy, loss.detach().numpy())
+            recorder.add_batch_stats(batch_time, accuracy, loss.detach().cpu().numpy())
 
             # print statistics
             running_loss += loss_val
@@ -191,7 +191,8 @@ if __name__ == '__main__':
 
     # initialize model
     # model = models.resnet18()
-    model = ResNet(resnet_size, num_classes, cr=cr, sketch=sketch)
+    model = ResNet(resnet_size, num_classes, cr=cr, sketch=sketch, device=device)
+    model.to(device)
 
     # synchronize model amongst all devices
     Comm.sync_models(model)
