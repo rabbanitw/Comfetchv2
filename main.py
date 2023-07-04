@@ -58,6 +58,7 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
         running_loss = 0.0
         batch_idx = 1
         epoch_time = 0.0
+        model.train()
         for inputs, labels in train_dl:
 
             inputs = inputs.to(device)
@@ -108,6 +109,7 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
 
         # compute test accuracy
         total_correct = 0
+        model.eval()
         with torch.no_grad():
             for inputs, labels in test_dl:
                 labels = labels.to(device)
