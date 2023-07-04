@@ -49,75 +49,60 @@ def unflatten_tensors(flat, tensors):
 
 class Communicator:
 
-    def __init__(self, size, comm, device):
+    def __init__(self, rank, size, comm, device):
         self.comm = comm
         self.size = size
+        self.rank = rank
         self.device = device
         self.tensor_list = list()
         self.send_buffer = None
         self.recv_buffer = None
 
-    def average(self):
+    def average(self, state_dict):
 
         self.comm.Barrier()
         tic = time.time()
 
-        self.comm.Allreduce(self.send_buffer, self.recv_buffer, op=MPI.SUM)
+        state_dicts = MPI.COMM_WORLD.allgather(state_dict)
 
         self.comm.Barrier()
         toc = time.time()
 
-        return toc - tic
+        for i in range(len(state_dicts)):
+            if i == self.rank:
+                continue
+            else:
+                neighbor_sd = state_dicts[i]
+                for key in state_dict.keys():
+                    state_dict[key] += neighbor_sd[key]
+
+        for key in state_dict.keys():
+            state_dict[key] = torch.div(state_dict[key], self.size)
+
+        return state_dict, toc - tic
 
     def sync_models(self, model):
 
         # prepare model to be communicated
-        self.prepare(model)
+        state_dict = self.prepare(model)
 
-        # averaging across all devices
-        _ = self.average()
-
-        # uniform averaging amongst all clients
-        self.recv_buffer = torch.from_numpy(self.recv_buffer / self.size)
+        state_dict, _ = self.average(state_dict)
 
         # reset local models to be the averaged model
-        self.reset_model(model)
+        model.load_state_dict(state_dict)
 
     def prepare(self, model):
-
-        # stack all model parameters into one tensor list
-        self.tensor_list = list()
-        for param in model.parameters():
-            self.tensor_list.append(param)
-
-        # necessary preprocess (flatten tensors)
-        self.send_buffer = flatten_tensors(self.tensor_list).cpu().detach().numpy()
-        self.recv_buffer = np.zeros_like(self.send_buffer)
-
-    def reset_model(self, model):
-        uft = unflatten_tensors(self.recv_buffer, self.tensor_list)
-        for i, param in enumerate(model.parameters()):
-            param.data = uft[i].to(self.device)
-        '''
-        for f, t in zip(uft, self.tensor_list):
-            t = t.to(self.device)
-            f = f.to(self.device)
-            with torch.no_grad():
-                t.set_(f)
-        '''
+        return model.state_dict()
 
     def communicate(self, model):
 
         # prepare model to be communicated
-        self.prepare(model)
+        state_dict = self.prepare(model)
 
         # averaging across all devices
-        comm_time = self.average()
-
-        # uniform averaging amongst all clients
-        self.recv_buffer = torch.from_numpy(self.recv_buffer / self.size)
+        state_dict, comm_time = self.average(state_dict)
 
         # reset local models to be the averaged model
-        self.reset_model()
+        model.load_state_dict(state_dict)
 
         return comm_time
