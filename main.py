@@ -87,7 +87,7 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
                 # total_pred[classes[label]] += 1
             accuracy = total_correct / batch_size
             loss_val = loss.item()
-            recorder.add_batch_stats(batch_time, accuracy, loss.detach().numpy())
+            recorder.add_batch_stats(batch_time, accuracy, loss.detach().cpu().numpy())
 
             # print statistics
             running_loss += loss_val
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     train_dl, test_dl, num_classes, num_test_data = load_cifar(rank, size, train_bs, test_bs)
 
     # initialize communicator
-    Comm = Communicator(rank, size, comm, device)
+    Comm = Communicator(size, comm, device)
 
     # initialize model
     # model = models.resnet18()
