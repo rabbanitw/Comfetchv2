@@ -51,7 +51,6 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
     if rank == 0:
         print('Beginning Training')
 
-    print(device)
     for epoch in range(1, epochs+1):
 
         if rank == 0:
@@ -192,7 +191,8 @@ if __name__ == '__main__':
 
     # initialize model
     # model = models.resnet18()
-    model = ResNet(resnet_size, num_classes, cr=cr, sketch=sketch)
+    model = ResNet(resnet_size, num_classes, cr=cr, sketch=sketch, device=device)
+    model.to(device)
 
     # synchronize model amongst all devices
     Comm.sync_models(model)
