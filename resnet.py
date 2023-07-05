@@ -93,8 +93,8 @@ class BasicBlock(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, rank, depth, num_classes, sketch=True, same_sketch=True, cr=0.5, device=None, num_sketches=1):
         super(ResNet, self).__init__()
-        # self.in_planes = 64
-        self.in_planes = 16
+        self.in_planes = 64
+        # self.in_planes = 16
         self.cr = cr
         self.sketch = sketch
         self.rank = rank
@@ -123,7 +123,7 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(self.in_planes)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        # '''
+        '''
         self.layer1 = self._make_layer(block, 16, num_blocks[0], device, stride=1)
         self.layer2 = self._make_layer(block, 16, num_blocks[1], device, stride=2)
         self.layer3 = self._make_layer(block, 16, num_blocks[2], device, stride=2)
@@ -135,7 +135,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, num_blocks[2], device, stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], device, stride=2)
         self.linear = nn.Linear(512*block.expansion, num_classes)
-        '''
+        # '''
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
     def _make_layer(self, block, planes, num_blocks, device, stride):

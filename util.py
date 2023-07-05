@@ -6,7 +6,7 @@ import shutil
 
 
 class Recorder(object):
-    def __init__(self, folderName, size, rank, args):
+    def __init__(self, folderName, size, rank, args, cr):
         self.record_epoch_times = list()
         self.record_comp_times = list()
         self.record_comm_times = list()
@@ -14,7 +14,7 @@ class Recorder(object):
         self.record_training_acc = list()
         self.record_test_acc = list()
         self.rank = rank
-        self.saveFolderName = folderName + '/' + args.name + '-' + str(size) + 'workers-' + str(args.cr) + 'cr'
+        self.saveFolderName = folderName + '/' + args.name + '-' + str(size) + 'workers-' + str(cr) + 'cr'
 
         if rank == 0:
             if not os.path.isdir(self.saveFolderName):

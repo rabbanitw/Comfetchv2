@@ -181,6 +181,8 @@ if __name__ == '__main__':
     batch_freq = 20
     resnet_size = 18
     sketch = bool(args.sketch)
+    if not sketch:
+        cr = 1
     same_client_sketch = bool(args.same_client_sketch)
 
     # load data
@@ -199,7 +201,7 @@ if __name__ == '__main__':
     Comm.sync_models(model)
 
     # initialize recorder
-    recorder = Recorder('output', size, rank, args)
+    recorder = Recorder('output', size, rank, args, cr)
 
     # initialize optimizer and loss
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
