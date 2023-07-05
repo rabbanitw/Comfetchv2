@@ -148,10 +148,10 @@ if __name__ == '__main__':
     parser.add_argument('--test_bs', type=int, default=1024)
     parser.add_argument('--clientlr', type=float, default=0.001)
     parser.add_argument('--sketch', type=int, default=1)
+    parser.add_argument('--same_client_sketch', type=int, default=1)
     parser.add_argument('--seed', type=int, default=100)
     parser.add_argument('--cr', type=float, default=0.5)
     parser.add_argument('--name', type=str, default='test')
-
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -181,6 +181,7 @@ if __name__ == '__main__':
     batch_freq = 20
     resnet_size = 18
     sketch = bool(args.sketch)
+    same_client_sketch = bool(args.same_client_sketch)
 
     # load data
     train_dl, test_dl, num_classes, num_test_data = load_cifar(rank, size, train_bs, test_bs)
@@ -191,7 +192,7 @@ if __name__ == '__main__':
 
     # initialize model
     # model = models.resnet18()
-    model = ResNet(resnet_size, num_classes, cr=cr, sketch=sketch, device=device)
+    model = ResNet(rank, resnet_size, num_classes, cr=cr, sketch=sketch, device=device, same_sketch=same_client_sketch)
     model.to(device)
 
     # synchronize model amongst all devices
