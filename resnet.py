@@ -92,7 +92,8 @@ class BasicBlock(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, depth, num_classes, sketch=True, cr=0.5, device=None):
         super(ResNet, self).__init__()
-        self.in_planes = 64
+        # self.in_planes = 64
+        self.in_planes = 16
         self.cr = cr
         self.sketch = sketch
 
@@ -100,10 +101,17 @@ class ResNet(nn.Module):
 
         self.conv1 = conv3x3(3, self.in_planes)
         self.bn1 = nn.BatchNorm2d(self.in_planes)
+        self.layer1 = self._make_layer(block, 16, num_blocks[0], device, stride=1)
+        self.layer2 = self._make_layer(block, 16, num_blocks[1], device, stride=2)
+        self.layer3 = self._make_layer(block, 16, num_blocks[2], device, stride=2)
+        self.linear = nn.Linear(16 * block.expansion, num_classes)
+        '''
         self.layer1 = self._make_layer(block, 64, num_blocks[0], device, stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], device, stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], device, stride=2)
         self.linear = nn.Linear(256*block.expansion, num_classes)
+        '''
+
 
     def _make_layer(self, block, planes, num_blocks, device, stride):
         strides = [stride] + [1]*(num_blocks-1)

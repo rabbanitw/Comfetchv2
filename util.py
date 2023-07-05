@@ -36,6 +36,8 @@ class Recorder(object):
         self.record_test_acc.append(test_acc)
         self.record_comm_times.append(comm_time)
         self.record_epoch_times.append(epoch_time)
+
+    def save_epoch_stats(self):
         np.savetxt(self.saveFolderName + '/r' + str(self.rank) + '-test-acc.log', self.record_test_acc,
                    delimiter=',')
         np.savetxt(self.saveFolderName + '/r' + str(self.rank) + '-comm-time.log', self.record_comm_times,
