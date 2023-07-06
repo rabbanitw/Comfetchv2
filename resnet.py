@@ -67,7 +67,7 @@ class Bottleneck(nn.Module):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, in_planes, planes, stride=1):
+    def __init__(self, in_planes, planes, stride=1, downstream=False):
         super(BasicBlock, self).__init__()
         # self.conv1 = conv3x3(in_planes, planes, stride)
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=True)
@@ -77,7 +77,8 @@ class BasicBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
 
         self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != self.expansion * planes:
+        # if stride != 1 or in_planes != self.expansion * planes:
+        if downstream:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=True),
                 nn.BatchNorm2d(self.expansion*planes)
@@ -124,12 +125,14 @@ class ResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         '''
-        self.layer1 = self._make_layer(block, 16, num_blocks[0], device, stride=1)
-        self.layer2 = self._make_layer(block, 16, num_blocks[1], device, stride=2)
-        self.layer3 = self._make_layer(block, 16, num_blocks[2], device, stride=2)
-        self.layer4 = self._make_layer(block, 16, num_blocks[3], device, stride=2)
-        self.linear = nn.Linear(16 * block.expansion, num_classes)
+        # shorter resnet-block
+        self.layer1 = self._make_layer(block, 64, num_blocks[0], device, stride=1)
+        self.layer2 = self._make_layer(block, 128, num_blocks[1], device, stride=2)
+        self.layer3 = self._make_layer(block, 256, num_blocks[2], device, stride=2)
+        self.layer4 = self._make_layer(block, 512, num_blocks[3], device, stride=2)
+        self.linear = nn.Linear(512*block.expansion, num_classes)
         '''
+        # larger resnet-block
         self.layer1 = self._make_layer(block, 64, num_blocks[0], device, stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], device, stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], device, stride=2)
@@ -138,17 +141,24 @@ class ResNet(nn.Module):
         # '''
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
-    def _make_layer(self, block, planes, num_blocks, device, stride):
-        strides = [stride] + [1]*(num_blocks-1)
+    def _make_layer(self, block, planes, num_blocks, device, stride=1):
+        # strides = [stride] + [1]*(num_blocks-1)
         layers = []
-
-        for stride in strides:
+        if stride != 1 or self.in_planes != planes:
             if self.sketch:
-                layer = block(self.rank, self.in_planes, planes, self.cr, device, stride, same_sketch=self.same_sketch)
+                layers.append(block(self.rank, self.in_planes, planes, self.cr, device, stride,
+                                    same_sketch=self.same_sketch, downstream=True))
             else:
-                layer = block(self.in_planes, planes, stride)
-            layers.append(layer)
-            self.in_planes = planes * block.expansion
+                layers.append(block(self.in_planes, planes, stride, downstream=True))
+
+        self.in_planes = planes
+
+        for i in range(1, num_blocks):
+            if self.sketch:
+                layers.append(block(self.rank, self.in_planes, planes, self.cr, device, stride,
+                                    same_sketch=self.same_sketch))
+            else:
+                layers.append(block(self.in_planes, planes, stride))
 
         return nn.Sequential(*layers)
 
