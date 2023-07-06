@@ -89,10 +89,13 @@ class Communicator:
         state_dict, _ = self.average(state_dict)
 
         # reset local models to be the averaged model
-        model.load_state_dict(state_dict.to(self.device))
+        model.load_state_dict(state_dict)
 
     def prepare(self, model):
-        return model.state_dict().detach().cpu()
+        if self.device == 'cpu':
+            return model.state_dict()
+        else:
+            return {k: v.cpu() for k, v in model.state_dict().items()}
 
     def communicate(self, model):
 
@@ -103,6 +106,6 @@ class Communicator:
         state_dict, comm_time = self.average(state_dict)
 
         # reset local models to be the averaged model
-        model.load_state_dict(state_dict.to(self.device))
+        model.load_state_dict(state_dict)
 
         return comm_time

@@ -143,7 +143,7 @@ if __name__ == '__main__':
     parser.add_argument('--alpha_partition', default=0.001)
     parser.add_argument('--commrounds', type=int, default=200)
     parser.add_argument('--clientfr', type=float, default=1.0)
-    parser.add_argument('--epochs', type=int, default=1)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--train_bs', type=int, default=128)
     parser.add_argument('--test_bs', type=int, default=1024)
     parser.add_argument('--clientlr', type=float, default=0.001)
