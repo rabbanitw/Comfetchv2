@@ -207,14 +207,7 @@ class SketchBasicBlock(nn.Module):
 
         # downstream
         self.shortcut = nn.Sequential()
-        # if self.stride != 1:
         if self.stride != 1 or in_planes != planes:
-            '''
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_planes, planes, kernel_size=1, stride=self.stride, bias=True),
-                nn.BatchNorm2d(self.expansion*planes)
-            )
-            '''
             self.downsample = True
             self.conv3 = nn.Conv2d(in_planes, planes, kernel_size=1, stride=self.stride, bias=False)
             self.bn3 = nn.BatchNorm2d(planes)

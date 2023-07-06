@@ -145,7 +145,7 @@ if __name__ == '__main__':
     parser.add_argument('--alpha_partition', default=0.001)
     parser.add_argument('--commrounds', type=int, default=200)
     parser.add_argument('--clientfr', type=float, default=1.0)
-    parser.add_argument('--epochs', type=int, default=1)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--train_bs', type=int, default=128)
     parser.add_argument('--test_bs', type=int, default=1024)
     parser.add_argument('--clientlr', type=float, default=0.001)
@@ -183,16 +183,15 @@ if __name__ == '__main__':
     batch_freq = 20
     resnet_size = 18
     sketch = bool(args.sketch)
+    same_client_sketch = bool(args.same_client_sketch)
     if not sketch:
         cr = 1
-    same_client_sketch = bool(args.same_client_sketch)
 
     # load data
     train_dl, test_dl, num_classes, num_test_data = load_cifar(rank, size, train_bs, test_bs)
 
     # initialize communicator
-    # Comm = Communicator(size, comm, device)
-    Comm = Communicator(rank, size, comm)
+    Comm = Communicator(rank, size, comm, device)
 
     # initialize model
     # model = models.resnet18()

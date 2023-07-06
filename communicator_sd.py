@@ -49,10 +49,11 @@ def unflatten_tensors(flat, tensors):
 
 class Communicator:
 
-    def __init__(self, rank, size, comm):
+    def __init__(self, rank, size, comm, device):
         self.comm = comm
         self.size = size
         self.rank = rank
+        self.device = device
         self.tensor_list = list()
         self.send_buffer = None
         self.recv_buffer = None
@@ -91,7 +92,10 @@ class Communicator:
         model.load_state_dict(state_dict)
 
     def prepare(self, model):
-        return model.state_dict()
+        if self.device == 'cpu':
+            return model.state_dict()
+        else:
+            return {k: v.cpu() for k, v in model.state_dict().items()}
 
     def communicate(self, model):
 
