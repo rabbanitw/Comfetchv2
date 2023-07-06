@@ -195,7 +195,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--norm', default="bn")
     parser.add_argument('--partition', default="noniid")
-    parser.add_argument('--alpha_partition', default=0.1)
+    parser.add_argument('--alpha_partition', default=1.0)
     parser.add_argument('--commrounds', type=int, default=200)
     parser.add_argument('--clientfr', type=float, default=1.0)
     parser.add_argument('--epochs', type=int, default=10)
@@ -271,4 +271,3 @@ if __name__ == '__main__':
     MPI.COMM_WORLD.Barrier()
 
     train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, device, epochs, batch_freq, num_test_data)
-
