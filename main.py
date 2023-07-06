@@ -181,16 +181,15 @@ if __name__ == '__main__':
     batch_freq = 20
     resnet_size = 18
     sketch = bool(args.sketch)
+    same_client_sketch = bool(args.same_client_sketch)
     if not sketch:
         cr = 1
-    same_client_sketch = bool(args.same_client_sketch)
 
     # load data
     train_dl, test_dl, num_classes, num_test_data = load_cifar(rank, size, train_bs, test_bs)
 
     # initialize communicator
-    # Comm = Communicator(size, comm, device)
-    Comm = Communicator(rank, size, comm)
+    Comm = Communicator(rank, size, comm, device)
 
     # initialize model
     # model = models.resnet18()
