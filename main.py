@@ -234,7 +234,6 @@ if __name__ == '__main__':
     device = torch.device(dev)
 
     # Hyperparameters_List
-    comm_rounds = args.commrounds
     train_bs = args.train_bs
     test_bs = args.test_bs
     learning_rate = args.clientlr

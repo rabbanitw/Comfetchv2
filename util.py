@@ -14,7 +14,8 @@ class Recorder(object):
         self.record_training_acc = list()
         self.record_test_acc = list()
         self.rank = rank
-        self.saveFolderName = folderName + '/' + args.name + '-' + str(size) + 'workers-' + str(cr) + 'cr'
+        self.saveFolderName = folderName + '/' + args.name + '-' + args.dataset + '-' + str(size)\
+                              + 'workers-' + str(cr) + 'cr'
 
         if rank == 0:
             if not os.path.isdir(self.saveFolderName):
