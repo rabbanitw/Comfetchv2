@@ -17,6 +17,6 @@ module load cuda/11.1.1
 source ../../../../cmlscratch/marcob/environments/compressed/bin/activate
 
 #Example of running a 50% (weight reduced by 50%) sketch with 200 comm rounds
-mpirun -n 4 python main_prune.py --cr 0.5 --name run1-sketch --seed 101 --epochs 200
-mpirun -n 4 python main_prune.py --cr	0.5 --name run2-sketch --seed 102 --epochs 200
-mpirun -n 4 python main_prune.py --cr	0.5 --name run3-sketch --seed 103 --epochs 200
+mpirun -n 4 python main_prune.py --cr 0.5 --name run1-prune --seed 101 --epochs 200
+mpirun -n 4 python main_prune.py --cr	0.5 --name run2-prune --seed 102 --epochs 200
+mpirun -n 4 python main_prune.py --cr	0.5 --name run3-prune --seed 103 --epochs 200
