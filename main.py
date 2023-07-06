@@ -3,7 +3,7 @@ from torchvision import transforms, datasets, models
 from argparse import ArgumentParser
 from mpi4py import MPI
 from resnet import ResNet
-from communicator import Communicator
+from communicator_sd import Communicator
 import time
 import numpy as np
 from util import Recorder
@@ -48,6 +48,7 @@ def load_cifar(rank, size, train_bs, test_bs):
 def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, device, epochs, freq, num_test_data):
 
     # train
+    model.train()
     if rank == 0:
         print('Beginning Training')
 
@@ -108,6 +109,7 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
         comm_time = Comm.communicate(model)
 
         # compute test accuracy
+        model.eval()
         total_correct = 0
         model.eval()
         with torch.no_grad():
@@ -127,6 +129,7 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
         test_accuracy = total_correct / num_test_data
         print('     rank %d, epoch %d: test accuracy %f' % (rank, epoch, test_accuracy))
         recorder.add_epoch_stats(test_accuracy, epoch_time, comm_time)
+        recorder.save_epoch_stats()
 
         MPI.COMM_WORLD.Barrier()
 
@@ -139,7 +142,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--norm', default="bn")
     parser.add_argument('--partition', default="noniid")
-    parser.add_argument('--client_number', default=100)
     parser.add_argument('--alpha_partition', default=0.001)
     parser.add_argument('--commrounds', type=int, default=200)
     parser.add_argument('--clientfr', type=float, default=1.0)
@@ -147,18 +149,15 @@ if __name__ == '__main__':
     parser.add_argument('--train_bs', type=int, default=128)
     parser.add_argument('--test_bs', type=int, default=1024)
     parser.add_argument('--clientlr', type=float, default=0.001)
-    parser.add_argument('--sch_flag', default=False)
-    parser.add_argument('--mixup_prop', type=float, default=0.0)
-    parser.add_argument('--natural_img_prop', type=float, default=0.)
-    parser.add_argument('--real_prop', type=float, default=0.)
-    parser.add_argument('--mix_num', type=int, default=3)
-    parser.add_argument('--laplace_scale', type=float, default=50.)
-    parser.add_argument('--supplement', type=bool, default=True)
     parser.add_argument('--sketch', type=int, default=1)
+    parser.add_argument('--same_client_sketch', type=int, default=1)
+    parser.add_argument('--seed', type=int, default=100)
     parser.add_argument('--cr', type=float, default=0.5)
     parser.add_argument('--name', type=str, default='test')
-
     args = parser.parse_args()
+
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
 
     # initialize MPI
     comm = MPI.COMM_WORLD
@@ -184,23 +183,27 @@ if __name__ == '__main__':
     batch_freq = 20
     resnet_size = 18
     sketch = bool(args.sketch)
+    if not sketch:
+        cr = 1
+    same_client_sketch = bool(args.same_client_sketch)
 
     # load data
     train_dl, test_dl, num_classes, num_test_data = load_cifar(rank, size, train_bs, test_bs)
 
     # initialize communicator
-    Comm = Communicator(size, comm, device)
+    # Comm = Communicator(size, comm, device)
+    Comm = Communicator(rank, size, comm)
 
     # initialize model
     # model = models.resnet18()
-    model = ResNet(resnet_size, num_classes, cr=cr, sketch=sketch, device=device)
+    model = ResNet(rank, resnet_size, num_classes, cr=cr, sketch=sketch, device=device, same_sketch=same_client_sketch)
     model.to(device)
 
     # synchronize model amongst all devices
     Comm.sync_models(model)
 
     # initialize recorder
-    recorder = Recorder('output', size, rank, args)
+    recorder = Recorder('output', size, rank, args, cr)
 
     # initialize optimizer and loss
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)

@@ -49,11 +49,10 @@ def unflatten_tensors(flat, tensors):
 
 class Communicator:
 
-    def __init__(self, rank, size, comm, device):
+    def __init__(self, rank, size, comm):
         self.comm = comm
         self.size = size
         self.rank = rank
-        self.device = device
         self.tensor_list = list()
         self.send_buffer = None
         self.recv_buffer = None
@@ -90,7 +89,6 @@ class Communicator:
 
         # reset local models to be the averaged model
         model.load_state_dict(state_dict)
-        model.to(self.device)
 
     def prepare(self, model):
         return model.state_dict()
@@ -105,6 +103,5 @@ class Communicator:
 
         # reset local models to be the averaged model
         model.load_state_dict(state_dict)
-        model.to(self.device)
 
         return comm_time
