@@ -1,1 +1,0 @@
-Namespace(norm='bn', partition='noniid', alpha_partition=1.0, commrounds=200, clientfr=1.0, epochs=200, train_bs=128, test_bs=1024, clientlr=0.001, sketch=1, iid=0, same_client_sketch=1, seed=103, cr=0.5, name='full-run3-nid-sketch')

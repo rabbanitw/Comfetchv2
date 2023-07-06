@@ -7,6 +7,7 @@ from communicator_sd import Communicator
 import time
 import numpy as np
 from util import Recorder
+from torch.nn.utils import prune
 
 
 def load_cifar(rank, size, train_bs, test_bs, cifar10=True):
@@ -208,7 +209,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_bs', type=int, default=128)
     parser.add_argument('--test_bs', type=int, default=1024)
     parser.add_argument('--clientlr', type=float, default=0.001)
-    parser.add_argument('--sketch', type=int, default=1)
+    parser.add_argument('--sketch', type=int, default=0)
     parser.add_argument('--iid', type=int, default=1)
     parser.add_argument('--same_client_sketch', type=int, default=1)
     parser.add_argument('--seed', type=int, default=100)
@@ -263,9 +264,29 @@ if __name__ == '__main__':
     Comm = Communicator(rank, size, comm, device)
 
     # initialize model
-    # model = models.resnet18()
-    model = ResNet(rank, resnet_size, num_classes, cr=cr, sketch=sketch, device=device, same_sketch=same_client_sketch)
+    model = ResNet(rank, resnet_size, num_classes, cr=cr, sketch=False, device=device)
     model.to(device)
+
+    parameters_to_prune = (
+        (model.conv1, 'weight'),
+        (model.layer1[0].conv1, 'weight'),
+        (model.layer1[0].conv2, 'weight'),
+        (model.layer2[0].conv1, 'weight'),
+        (model.layer2[0].conv2, 'weight'),
+        (model.layer2[0].shortcut[0], 'weight'),
+        (model.layer3[0].conv1, 'weight'),
+        (model.layer3[0].conv2, 'weight'),
+        (model.layer3[0].shortcut[0], 'weight'),
+        (model.layer4[0].conv1, 'weight'),
+        (model.layer4[0].conv2, 'weight'),
+        (model.layer4[0].shortcut[0], 'weight')
+    )
+
+    prune.global_unstructured(
+        parameters_to_prune,
+        pruning_method=prune.L1Unstructured,
+        amount=cr,
+    )
 
     # synchronize model amongst all devices
     Comm.sync_models(model)
