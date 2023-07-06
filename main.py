@@ -9,7 +9,7 @@ import numpy as np
 from util import Recorder
 
 
-def load_cifar(rank, size, train_bs, test_bs):
+def load_cifar(rank, size, train_bs, test_bs, cifar10=True):
     # create transforms
     # We will just convert to tensor and normalize since no special transforms are mentioned in the paper
     stats = ((0.49139968, 0.48215841, 0.44653091), (0.24703223, 0.24348513, 0.26158784))
@@ -19,8 +19,12 @@ def load_cifar(rank, size, train_bs, test_bs):
                                                  transforms.Normalize(*stats)])
     transforms_cifar_test = transforms.Compose([transforms.ToTensor(), transforms.Normalize(*stats)])
 
-    cifar_data_train = datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms_cifar_train)
-    cifar_data_test = datasets.CIFAR10(root='./data', train=False, download=True, transform=transforms_cifar_test)
+    if cifar10:
+        cifar_data_train = datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms_cifar_train)
+        cifar_data_test = datasets.CIFAR10(root='./data', train=False, download=True, transform=transforms_cifar_test)
+    else:
+        cifar_data_train = datasets.CIFAR100(root='./data', train=True, download=True, transform=transforms_cifar_train)
+        cifar_data_test = datasets.CIFAR100(root='./data', train=False, download=True, transform=transforms_cifar_test)
     num_classes = len(cifar_data_train.class_to_idx.values())
 
     # split data evently amongst devices (first shuffle to ensure iid)
@@ -45,7 +49,7 @@ def load_cifar(rank, size, train_bs, test_bs):
     return trainloader, testloader, num_classes, num_test_data
 
 
-def load_cifar_noniid(rank, size, train_bs, test_bs, alpha=0.1):
+def load_cifar_noniid(rank, size, train_bs, test_bs, alpha=0.1, cifar10=True):
     # create transforms
     # We will just convert to tensor and normalize since no special transforms are mentioned in the paper
     stats = ((0.49139968, 0.48215841, 0.44653091), (0.24703223, 0.24348513, 0.26158784))
@@ -55,8 +59,12 @@ def load_cifar_noniid(rank, size, train_bs, test_bs, alpha=0.1):
                                                  transforms.Normalize(*stats)])
     transforms_cifar_test = transforms.Compose([transforms.ToTensor(), transforms.Normalize(*stats)])
 
-    cifar_data_train = datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms_cifar_train)
-    cifar_data_test = datasets.CIFAR10(root='./data', train=False, download=True, transform=transforms_cifar_test)
+    if cifar10:
+        cifar_data_train = datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms_cifar_train)
+        cifar_data_test = datasets.CIFAR10(root='./data', train=False, download=True, transform=transforms_cifar_test)
+    else:
+        cifar_data_train = datasets.CIFAR100(root='./data', train=True, download=True, transform=transforms_cifar_train)
+        cifar_data_test = datasets.CIFAR100(root='./data', train=False, download=True, transform=transforms_cifar_test)
     num_classes = len(cifar_data_train.class_to_idx.values())
 
     # split data evently amongst devices (first shuffle to ensure iid)
@@ -193,10 +201,8 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
 if __name__ == '__main__':
 
     parser = ArgumentParser()
-    parser.add_argument('--norm', default="bn")
-    parser.add_argument('--partition', default="noniid")
+    parser.add_argument('--dataset', type=str, default="cifar10")
     parser.add_argument('--alpha_partition', default=1.0)
-    parser.add_argument('--commrounds', type=int, default=200)
     parser.add_argument('--clientfr', type=float, default=1.0)
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--train_bs', type=int, default=128)
@@ -240,14 +246,19 @@ if __name__ == '__main__':
     sketch = bool(args.sketch)
     iid = bool(args.iid)
     same_client_sketch = bool(args.same_client_sketch)
+    if args.dataset == 'cifar10':
+        cifar10 = True
+    else:
+        cifar10 = False
     if not sketch:
         cr = 1
 
     # load data (iid or non-iid)
     if iid:
-        train_dl, test_dl, num_classes, num_test_data = load_cifar(rank, size, train_bs, test_bs)
+        train_dl, test_dl, num_classes, num_test_data = load_cifar(rank, size, train_bs, test_bs, cifar10=cifar10)
     else:
-        train_dl, test_dl, num_classes, num_test_data = load_cifar_noniid(rank, size, train_bs, test_bs, alpha=alpha)
+        train_dl, test_dl, num_classes, num_test_data = load_cifar_noniid(rank, size, train_bs, test_bs, alpha=alpha,
+                                                                          cifar10=cifar10)
 
     # initialize communicator
     Comm = Communicator(rank, size, comm, device)
