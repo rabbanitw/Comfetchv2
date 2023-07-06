@@ -94,7 +94,6 @@ class ResNet(nn.Module):
     def __init__(self, rank, depth, num_classes, sketch=True, same_sketch=True, cr=0.5, device=None, num_sketches=1):
         super(ResNet, self).__init__()
         self.in_planes = 64
-        # self.in_planes = 16
         self.cr = cr
         self.sketch = sketch
         self.rank = rank
@@ -158,10 +157,10 @@ class ResNet(nn.Module):
 
         for i in range(1, num_blocks):
             if self.sketch:
-                layers.append(block(self.rank, self.in_planes, planes, self.cr, device, stride,
+                layers.append(block(self.rank, self.in_planes, planes, self.cr, device, stride=1,
                                     same_sketch=self.same_sketch))
             else:
-                layers.append(block(self.in_planes, planes, stride))
+                layers.append(block(self.in_planes, planes, stride=1))
 
         return nn.Sequential(*layers)
 
@@ -221,8 +220,6 @@ class SketchBasicBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
 
         # downstream
-        self.shortcut = nn.Sequential()
-        # if self.stride != 1 or in_planes != planes:
         if self.downstream:
             self.conv3 = nn.Conv2d(in_planes, planes, kernel_size=1, stride=self.stride, bias=False)
             self.bn3 = nn.BatchNorm2d(planes)
