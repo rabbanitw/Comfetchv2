@@ -45,6 +45,59 @@ def load_cifar(rank, size, train_bs, test_bs):
     return trainloader, testloader, num_classes, num_test_data
 
 
+def load_cifar_noniid(rank, size, train_bs, test_bs, alpha=0.1):
+    # create transforms
+    # We will just convert to tensor and normalize since no special transforms are mentioned in the paper
+    stats = ((0.49139968, 0.48215841, 0.44653091), (0.24703223, 0.24348513, 0.26158784))
+    transforms_cifar_train = transforms.Compose([transforms.ToTensor(),
+                                                 transforms.RandomCrop(32, padding=4, padding_mode='reflect'),
+                                                 transforms.RandomHorizontalFlip(p=0.5),
+                                                 transforms.Normalize(*stats)])
+    transforms_cifar_test = transforms.Compose([transforms.ToTensor(), transforms.Normalize(*stats)])
+
+    cifar_data_train = datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms_cifar_train)
+    cifar_data_test = datasets.CIFAR10(root='./data', train=False, download=True, transform=transforms_cifar_test)
+    num_classes = len(cifar_data_train.class_to_idx.values())
+
+    # split data evently amongst devices (first shuffle to ensure iid)
+    num_data = cifar_data_train.data.shape[0]
+    num_test_data = cifar_data_test.data.shape[0]
+
+    # dirichlet split
+    if rank == 0:
+        min_size = 0
+        labels = np.array(cifar_data_train.targets)
+        dataidx_map = {}
+        while min_size < 10:
+            idx_batch = [[] for _ in range(size)]
+            # for each class in the dataset
+            for k in range(num_classes):
+                idx_k = np.where(labels == k)[0]
+                np.random.shuffle(idx_k)
+                proportions = np.random.dirichlet(np.repeat(alpha, size))
+                # Balance
+                proportions = np.array([p * (len(idx_j) < num_data / size) for p, idx_j in zip(proportions, idx_batch)])
+                proportions = proportions / proportions.sum()
+                proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
+                idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
+                min_size = min([len(idx_j) for idx_j in idx_batch])
+
+        for j in range(size):
+            dataidx_map[j] = idx_batch[j]
+    else:
+        dataidx_map = None
+
+    dataidx_map = MPI.COMM_WORLD.bcast(dataidx_map, root=0)
+    cifar_data_train.data = cifar_data_train.data[dataidx_map[rank], :, :, :]
+    cifar_data_train.targets = np.array(cifar_data_train.targets)[dataidx_map[rank]]
+
+    # load data into dataloader
+    trainloader = torch.utils.data.DataLoader(cifar_data_train, batch_size=train_bs, shuffle=True)
+    testloader = torch.utils.data.DataLoader(cifar_data_test, batch_size=test_bs, shuffle=False)
+
+    return trainloader, testloader, num_classes, num_test_data
+
+
 def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, device, epochs, freq, num_test_data):
 
     # train
@@ -142,7 +195,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--norm', default="bn")
     parser.add_argument('--partition', default="noniid")
-    parser.add_argument('--alpha_partition', default=0.001)
+    parser.add_argument('--alpha_partition', default=0.1)
     parser.add_argument('--commrounds', type=int, default=200)
     parser.add_argument('--clientfr', type=float, default=1.0)
     parser.add_argument('--epochs', type=int, default=10)
@@ -150,6 +203,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_bs', type=int, default=1024)
     parser.add_argument('--clientlr', type=float, default=0.001)
     parser.add_argument('--sketch', type=int, default=1)
+    parser.add_argument('--iid', type=int, default=1)
     parser.add_argument('--same_client_sketch', type=int, default=1)
     parser.add_argument('--seed', type=int, default=100)
     parser.add_argument('--cr', type=float, default=0.5)
@@ -182,13 +236,18 @@ if __name__ == '__main__':
     cr = args.cr
     batch_freq = 20
     resnet_size = 18
+    alpha = args.alpha_partition
     sketch = bool(args.sketch)
+    iid = bool(args.iid)
     same_client_sketch = bool(args.same_client_sketch)
     if not sketch:
         cr = 1
 
-    # load data
-    train_dl, test_dl, num_classes, num_test_data = load_cifar(rank, size, train_bs, test_bs)
+    # load data (iid or non-iid)
+    if iid:
+        train_dl, test_dl, num_classes, num_test_data = load_cifar(rank, size, train_bs, test_bs)
+    else:
+        train_dl, test_dl, num_classes, num_test_data = load_cifar_noniid(rank, size, train_bs, test_bs, alpha=alpha)
 
     # initialize communicator
     Comm = Communicator(rank, size, comm, device)
