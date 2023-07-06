@@ -67,7 +67,7 @@ class Bottleneck(nn.Module):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, in_planes, planes, stride=1, downstream=False):
+    def __init__(self, in_planes, planes, stride=1):
         super(BasicBlock, self).__init__()
         # self.conv1 = conv3x3(in_planes, planes, stride)
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=True)
@@ -77,8 +77,7 @@ class BasicBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
 
         self.shortcut = nn.Sequential()
-        # if stride != 1 or in_planes != self.expansion * planes:
-        if downstream:
+        if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=True),
                 nn.BatchNorm2d(self.expansion*planes)
@@ -145,11 +144,15 @@ class ResNet(nn.Module):
         # strides = [stride] + [1]*(num_blocks-1)
         layers = []
         if stride != 1 or self.in_planes != planes:
-            if self.sketch:
-                layers.append(block(self.rank, self.in_planes, planes, self.cr, device, stride,
-                                    same_sketch=self.same_sketch, downstream=True))
-            else:
-                layers.append(block(self.in_planes, planes, stride, downstream=True))
+            downstream = True
+        else:
+            downstream = False
+
+        if self.sketch:
+            layers.append(block(self.rank, self.in_planes, planes, self.cr, device, stride,
+                                same_sketch=self.same_sketch, downstream=downstream))
+        else:
+            layers.append(block(self.in_planes, planes, stride))
 
         self.in_planes = planes
 
@@ -187,11 +190,13 @@ class ResNet(nn.Module):
 class SketchBasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, rank, in_planes, planes, cr, device, stride=1, num_sketches=1, same_sketch=True):
+    def __init__(self, rank, in_planes, planes, cr, device, stride=1, num_sketches=1, same_sketch=True,
+                 downstream=False):
         super(SketchBasicBlock, self).__init__()
         self.stride = stride
         self.device = device
         self.rank = rank
+        self.downstream = downstream
         sketch_dim = int(planes*cr)
 
         # first piece
@@ -217,8 +222,8 @@ class SketchBasicBlock(nn.Module):
 
         # downstream
         self.shortcut = nn.Sequential()
-        if self.stride != 1 or in_planes != planes:
-            self.downsample = True
+        # if self.stride != 1 or in_planes != planes:
+        if self.downstream:
             self.conv3 = nn.Conv2d(in_planes, planes, kernel_size=1, stride=self.stride, bias=False)
             self.bn3 = nn.BatchNorm2d(planes)
             # if devices using same sketching matrix
@@ -233,8 +238,6 @@ class SketchBasicBlock(nn.Module):
 
             # remove gradient tracking
             self.h3.requires_grad = False
-        else:
-            self.downsample = False
 
         # remove gradient tracking
         self.h1.requires_grad = False
@@ -258,7 +261,7 @@ class SketchBasicBlock(nn.Module):
         out_unsketch2 = unsketch_mat(out_conv2, self.h2.transpose(1, 2))
         out = self.bn2(out_unsketch2)
 
-        if self.downsample:
+        if self.downstream:
             self.h3 = self.h3.to(self.device)
             out_sketch3 = sketch_mat(self.conv3.weight, self.h3)
             out_conv3 = F.conv2d(x, out_sketch3, stride=self.stride)
