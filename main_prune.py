@@ -271,15 +271,23 @@ if __name__ == '__main__':
         (model.conv1, 'weight'),
         (model.layer1[0].conv1, 'weight'),
         (model.layer1[0].conv2, 'weight'),
+        (model.layer1[1].conv1, 'weight'),
+        (model.layer1[1].conv2, 'weight'),
         (model.layer2[0].conv1, 'weight'),
         (model.layer2[0].conv2, 'weight'),
         (model.layer2[0].shortcut[0], 'weight'),
+        (model.layer2[1].conv1, 'weight'),
+        (model.layer2[1].conv2, 'weight'),
         (model.layer3[0].conv1, 'weight'),
         (model.layer3[0].conv2, 'weight'),
         (model.layer3[0].shortcut[0], 'weight'),
+        (model.layer3[1].conv1, 'weight'),
+        (model.layer3[1].conv2, 'weight'),
         (model.layer4[0].conv1, 'weight'),
         (model.layer4[0].conv2, 'weight'),
-        (model.layer4[0].shortcut[0], 'weight')
+        (model.layer4[0].shortcut[0], 'weight'),
+        (model.layer4[1].conv1, 'weight'),
+        (model.layer4[1].conv2, 'weight'),
     )
 
     prune.global_unstructured(
