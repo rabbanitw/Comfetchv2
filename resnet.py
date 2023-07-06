@@ -94,7 +94,6 @@ class ResNet(nn.Module):
     def __init__(self, rank, depth, num_classes, sketch=True, same_sketch=True, cr=0.5, device=None, num_sketches=1):
         super(ResNet, self).__init__()
         self.in_planes = 64
-        # self.in_planes = 16
         self.cr = cr
         self.sketch = sketch
         self.rank = rank
@@ -124,12 +123,14 @@ class ResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         '''
-        self.layer1 = self._make_layer(block, 16, num_blocks[0], device, stride=1)
-        self.layer2 = self._make_layer(block, 16, num_blocks[1], device, stride=2)
-        self.layer3 = self._make_layer(block, 16, num_blocks[2], device, stride=2)
-        self.layer4 = self._make_layer(block, 16, num_blocks[3], device, stride=2)
-        self.linear = nn.Linear(16 * block.expansion, num_classes)
+        # shorter resnet-block
+        self.layer1 = self._make_layer(block, 64, num_blocks[0], device, stride=1)
+        self.layer2 = self._make_layer(block, 128, num_blocks[1], device, stride=2)
+        self.layer3 = self._make_layer(block, 256, num_blocks[2], device, stride=2)
+        self.layer4 = self._make_layer(block, 512, num_blocks[3], device, stride=2)
+        self.linear = nn.Linear(512*block.expansion, num_classes)
         '''
+        # larger resnet-block
         self.layer1 = self._make_layer(block, 64, num_blocks[0], device, stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], device, stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], device, stride=2)
@@ -138,17 +139,28 @@ class ResNet(nn.Module):
         # '''
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
-    def _make_layer(self, block, planes, num_blocks, device, stride):
-        strides = [stride] + [1]*(num_blocks-1)
+    def _make_layer(self, block, planes, num_blocks, device, stride=1):
+        # strides = [stride] + [1]*(num_blocks-1)
         layers = []
+        if stride != 1 or self.in_planes != planes:
+            downstream = True
+        else:
+            downstream = False
 
-        for stride in strides:
+        if self.sketch:
+            layers.append(block(self.rank, self.in_planes, planes, self.cr, device, stride,
+                                same_sketch=self.same_sketch, downstream=downstream))
+        else:
+            layers.append(block(self.in_planes, planes, stride))
+
+        self.in_planes = planes
+
+        for i in range(1, num_blocks):
             if self.sketch:
-                layer = block(self.rank, self.in_planes, planes, self.cr, device, stride, same_sketch=self.same_sketch)
+                layers.append(block(self.rank, self.in_planes, planes, self.cr, device, stride=1,
+                                    same_sketch=self.same_sketch))
             else:
-                layer = block(self.in_planes, planes, stride)
-            layers.append(layer)
-            self.in_planes = planes * block.expansion
+                layers.append(block(self.in_planes, planes, stride=1))
 
         return nn.Sequential(*layers)
 
@@ -177,11 +189,13 @@ class ResNet(nn.Module):
 class SketchBasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, rank, in_planes, planes, cr, device, stride=1, num_sketches=1, same_sketch=True):
+    def __init__(self, rank, in_planes, planes, cr, device, stride=1, num_sketches=1, same_sketch=True,
+                 downstream=False):
         super(SketchBasicBlock, self).__init__()
         self.stride = stride
         self.device = device
         self.rank = rank
+        self.downstream = downstream
         sketch_dim = int(planes*cr)
 
         # first piece
@@ -206,9 +220,7 @@ class SketchBasicBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
 
         # downstream
-        self.shortcut = nn.Sequential()
-        if self.stride != 1 or in_planes != planes:
-            self.downsample = True
+        if self.downstream:
             self.conv3 = nn.Conv2d(in_planes, planes, kernel_size=1, stride=self.stride, bias=False)
             self.bn3 = nn.BatchNorm2d(planes)
             # if devices using same sketching matrix
@@ -223,8 +235,6 @@ class SketchBasicBlock(nn.Module):
 
             # remove gradient tracking
             self.h3.requires_grad = False
-        else:
-            self.downsample = False
 
         # remove gradient tracking
         self.h1.requires_grad = False
@@ -248,7 +258,7 @@ class SketchBasicBlock(nn.Module):
         out_unsketch2 = unsketch_mat(out_conv2, self.h2.transpose(1, 2))
         out = self.bn2(out_unsketch2)
 
-        if self.downsample:
+        if self.downstream:
             self.h3 = self.h3.to(self.device)
             out_sketch3 = sketch_mat(self.conv3.weight, self.h3)
             out_conv3 = F.conv2d(x, out_sketch3, stride=self.stride)
