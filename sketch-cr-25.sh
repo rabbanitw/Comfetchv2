@@ -13,9 +13,9 @@
 
 module purge
 module load mpi
-module load cuda/11.4.4
-source ../../../../cmlscratch/marcob/environments/compressed/bin/activate
+#module load cuda/11.4.4
+#source ../../../../cmlscratch/marcob/environments/compressed/bin/activate
 
-mpirun -n 4 python main.py --cr 0.25 --name run1-sketch --seed 101 --epochs 200
-mpirun -n 4 python main.py --cr	0.25 --name run2-sketch --seed 102 --epochs 200
-mpirun -n 4 python main.py --cr	0.25 --name run3-sketch --seed 103 --epochs 200
+mpirun -n 10 python main.py --cr 0.1 --name run1-sketch --seed 101 --epochs 200 --iid 0 --alpha 0.5
+mpirun -n 10 python main.py --cr 0.1 --name run2-sketch --seed 102 --epochs 200 --iid 0 --alpha 0.5
+mpirun -n 10 python main.py --cr 0.1 --name run3-sketch --seed 103 --epochs 200 --iid 0 --alpha 0.5
