@@ -1,0 +1,1 @@
+Namespace(dataset='cifar10', alpha_partition=1.0, clientfr=1.0, epochs=200, train_bs=128, test_bs=1024, clientlr=0.001, sketch=0, iid=1, same_client_sketch=1, seed=101, cr=0.25, name='run1-prune')

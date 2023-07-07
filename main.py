@@ -100,7 +100,7 @@ def load_cifar_noniid(rank, size, train_bs, test_bs, alpha=0.1, cifar10=True):
     cifar_data_train.targets = np.array(cifar_data_train.targets)[dataidx_map[rank]]
 
     # load data into dataloader
-    trainloader = torch.utils.data.DataLoader(cifar_data_train, batch_size=train_bs, shuffle=True)
+    trainloader = torch.utils.data.DataLoader(cifar_data_train, batch_size=train_bs, shuffle=True, drop_last=True)
     testloader = torch.utils.data.DataLoader(cifar_data_test, batch_size=test_bs, shuffle=False)
 
     return trainloader, testloader, num_classes, num_test_data
