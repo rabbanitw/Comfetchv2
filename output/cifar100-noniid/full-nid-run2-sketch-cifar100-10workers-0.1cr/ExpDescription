@@ -1,0 +1,1 @@
+Namespace(dataset='cifar100', alpha_partition=1.0, clientfr=1.0, epochs=200, train_bs=128, test_bs=1024, clientlr=0.001, sketch=1, iid=0, same_client_sketch=1, seed=102, cr=0.1, name='full-nid-run2-sketch')
