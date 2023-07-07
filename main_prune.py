@@ -101,7 +101,7 @@ def load_cifar_noniid(rank, size, train_bs, test_bs, alpha=0.1, cifar10=True):
     cifar_data_train.targets = np.array(cifar_data_train.targets)[dataidx_map[rank]]
 
     # load data into dataloader
-    trainloader = torch.utils.data.DataLoader(cifar_data_train, batch_size=train_bs, shuffle=True)
+    trainloader = torch.utils.data.DataLoader(cifar_data_train, batch_size=train_bs, shuffle=True, drop_last=True)
     testloader = torch.utils.data.DataLoader(cifar_data_test, batch_size=test_bs, shuffle=False)
 
     return trainloader, testloader, num_classes, num_test_data
@@ -123,14 +123,6 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
         epoch_time = 0.0
         model.train()
         for inputs, labels in train_dl:
-
-            if rank == 0:
-                print(
-                    "Sparsity in conv1.weight: {:.2f}%".format(
-                        100. * float(torch.sum(model.conv1.weight == 0))
-                        / float(model.conv1.weight.nelement())
-                    )
-                )
 
             inputs = inputs.to(device)
             labels = labels.to(device)
@@ -174,10 +166,13 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
             epoch_time += batch_time
 
         recorder.save_to_file()
-
+        
         # perform federated averaging after every epoch
         comm_time = Comm.communicate(model)
 
+
+        # print(model.conv1.weight)
+        
         # compute test accuracy
         model.eval()
         total_correct = 0
@@ -271,7 +266,6 @@ if __name__ == '__main__':
 
     # initialize model
     model = ResNet(rank, resnet_size, num_classes, cr=cr, sketch=False, device=device)
-    model.to(device)
 
     '''
     parameters_to_prune = (
@@ -304,6 +298,7 @@ if __name__ == '__main__':
     )
     '''
 
+    #'''
     comp = 1-cr
     prune.random_unstructured(model.conv1, name="weight", amount=comp)
     prune.random_unstructured(model.layer1[0].conv1, name="weight", amount=comp)
@@ -325,6 +320,9 @@ if __name__ == '__main__':
     prune.random_unstructured(model.layer2[0].shortcut[0], name="weight", amount=comp)
     prune.random_unstructured(model.layer3[0].shortcut[0], name="weight", amount=comp)
     prune.random_unstructured(model.layer4[0].shortcut[0], name="weight", amount=comp)
+    #'''
+
+    model.to(device)
 
     '''
     prune.remove(model.conv1, 'weight')
@@ -355,7 +353,7 @@ if __name__ == '__main__':
             / float(model.conv1.weight.nelement())
         )
     )
-
+    
     # synchronize model amongst all devices
     Comm.sync_models(model)
 
