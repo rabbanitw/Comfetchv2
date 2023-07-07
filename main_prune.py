@@ -124,6 +124,14 @@ def train(rank, model, Comm, optimizer, loss_fn, train_dl, test_dl, recorder, de
         model.train()
         for inputs, labels in train_dl:
 
+            if rank == 0:
+                print(
+                    "Sparsity in conv1.weight: {:.2f}%".format(
+                        100. * float(torch.sum(model.conv1.weight == 0))
+                        / float(model.conv1.weight.nelement())
+                    )
+                )
+
             inputs = inputs.to(device)
             labels = labels.to(device)
             batch_size = inputs.size(dim=0)
@@ -318,6 +326,7 @@ if __name__ == '__main__':
     prune.random_unstructured(model.layer3[0].shortcut[0], name="weight", amount=comp)
     prune.random_unstructured(model.layer4[0].shortcut[0], name="weight", amount=comp)
 
+    '''
     prune.remove(model.conv1, 'weight')
     prune.remove(model.layer1[0].conv1, 'weight')
     prune.remove(model.layer1[0].conv2, "weight")
@@ -338,6 +347,7 @@ if __name__ == '__main__':
     prune.remove(model.layer2[0].shortcut[0], "weight")
     prune.remove(model.layer3[0].shortcut[0], "weight")
     prune.remove(model.layer4[0].shortcut[0], "weight")
+    '''
 
     print(
         "Sparsity in conv1.weight: {:.2f}%".format(
