@@ -250,8 +250,6 @@ if __name__ == '__main__':
         cifar10 = True
     else:
         cifar10 = False
-    if not sketch:
-        cr = 1
 
     # load data (iid or non-iid)
     if iid:
@@ -267,6 +265,7 @@ if __name__ == '__main__':
     model = ResNet(rank, resnet_size, num_classes, cr=cr, sketch=False, device=device)
     model.to(device)
 
+    '''
     parameters_to_prune = (
         (model.conv1, 'weight'),
         (model.layer1[0].conv1, 'weight'),
@@ -294,6 +293,36 @@ if __name__ == '__main__':
         parameters_to_prune,
         pruning_method=prune.L1Unstructured,
         amount=cr,
+    )
+    '''
+
+    comp = 1-cr
+    prune.random_unstructured(model.conv1, name="weight", amount=comp)
+    prune.random_unstructured(model.layer1[0].conv1, name="weight", amount=comp)
+    prune.random_unstructured(model.layer1[0].conv2, name="weight", amount=comp)
+    prune.random_unstructured(model.layer1[1].conv1, name="weight", amount=comp)
+    prune.random_unstructured(model.layer1[1].conv2, name="weight", amount=comp)
+    prune.random_unstructured(model.layer2[0].conv1, name="weight", amount=comp)
+    prune.random_unstructured(model.layer2[0].conv2, name="weight", amount=comp)
+    prune.random_unstructured(model.layer2[1].conv1, name="weight", amount=comp)
+    prune.random_unstructured(model.layer2[1].conv2, name="weight", amount=comp)
+    prune.random_unstructured(model.layer3[0].conv1, name="weight", amount=comp)
+    prune.random_unstructured(model.layer3[0].conv2, name="weight", amount=comp)
+    prune.random_unstructured(model.layer3[1].conv1, name="weight", amount=comp)
+    prune.random_unstructured(model.layer3[1].conv2, name="weight", amount=comp)
+    prune.random_unstructured(model.layer4[0].conv1, name="weight", amount=comp)
+    prune.random_unstructured(model.layer4[0].conv2, name="weight", amount=comp)
+    prune.random_unstructured(model.layer4[1].conv1, name="weight", amount=comp)
+    prune.random_unstructured(model.layer4[1].conv2, name="weight", amount=comp)
+    prune.random_unstructured(model.layer2[0].shortcut[0], name="weight", amount=comp)
+    prune.random_unstructured(model.layer3[0].shortcut[0], name="weight", amount=comp)
+    prune.random_unstructured(model.layer4[0].shortcut[0], name="weight", amount=comp)
+
+    print(
+        "Sparsity in conv1.weight: {:.2f}%".format(
+            100. * float(torch.sum(model.conv1.weight == 0))
+            / float(model.conv1.weight.nelement())
+        )
     )
 
     # synchronize model amongst all devices
