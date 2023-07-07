@@ -318,6 +318,27 @@ if __name__ == '__main__':
     prune.random_unstructured(model.layer3[0].shortcut[0], name="weight", amount=comp)
     prune.random_unstructured(model.layer4[0].shortcut[0], name="weight", amount=comp)
 
+    prune.remove(model.conv1, 'weight')
+    prune.remove(model.layer1[0].conv1, 'weight')
+    prune.remove(model.layer1[0].conv2, "weight")
+    prune.remove(model.layer1[1].conv1, "weight")
+    prune.remove(model.layer1[1].conv2, "weight")
+    prune.remove(model.layer2[0].conv1, "weight")
+    prune.remove(model.layer2[0].conv2, "weight")
+    prune.remove(model.layer2[1].conv1, "weight")
+    prune.remove(model.layer2[1].conv2, "weight")
+    prune.remove(model.layer3[0].conv1, "weight")
+    prune.remove(model.layer3[0].conv2, "weight")
+    prune.remove(model.layer3[1].conv1, "weight")
+    prune.remove(model.layer3[1].conv2, "weight")
+    prune.remove(model.layer4[0].conv1, "weight")
+    prune.remove(model.layer4[0].conv2, "weight")
+    prune.remove(model.layer4[1].conv1, "weight")
+    prune.remove(model.layer4[1].conv2, "weight")
+    prune.remove(model.layer2[0].shortcut[0], "weight")
+    prune.remove(model.layer3[0].shortcut[0], "weight")
+    prune.remove(model.layer4[0].shortcut[0], "weight")
+
     print(
         "Sparsity in conv1.weight: {:.2f}%".format(
             100. * float(torch.sum(model.conv1.weight == 0))
